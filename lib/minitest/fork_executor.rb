@@ -7,6 +7,12 @@ module Minitest
   # offered by more modern Rubies.
 
   class ForkExecutor
+    class << self
+      attr_accessor :methods_to_fork
+    end
+
+    self.methods_to_fork = []
+
     # #start is called by Minitest when initializing the executor. This is where
     # we override some Minitest internals to implement fork-based execution.
     def start
@@ -26,6 +32,7 @@ module Minitest
       # original run_one_method - they're the test class (e.g. UserTest) and
       # the test method name (e.g. :test_email_must_be_unique).
       Minitest.define_singleton_method(:run_one_method) do |klass, method_name|
+        return original_run_one_method.call(klass, method_name) if !Minitest::ForkExecutor.methods_to_fork.include?(method_name)
         # Set up a binary pipe for transporting test results from the child
         # to the parent process.
         read_io, write_io = IO.pipe
